@@ -1,0 +1,14 @@
+{
+  "name": "cazador-inmobiliario-api",
+  "version": "1.0.0",
+  "description": "Backend mínimo para GPT Actions del GPT 'Cazador Inmobiliario'",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5"
+  }
+}
