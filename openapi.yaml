@@ -1,0 +1,312 @@
+openapi: 3.1.1
+info:
+  title: Cazador Inmobiliario API
+  version: "1.0.0"
+servers:
+  - url: https://cazador-inmobiliario-api.onrender.com
+
+paths:
+  /lead:
+    post:
+      operationId: createLead
+      summary: Save user lead
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LeadInput"
+      responses:
+        "200":
+          description: Lead stored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LeadResponse"
+
+  /search:
+    post:
+      operationId: startSearch
+      summary: Start property search job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SearchInput"
+      responses:
+        "202":
+          description: Search job accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchAccepted"
+
+  /search/{jobId}/results:
+    get:
+      operationId: getSearchResults
+      summary: Get normalized search results
+      parameters:
+        - in: path
+          name: jobId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Listings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListingsResponse"
+
+  /evaluate:
+    post:
+      operationId: evaluateListings
+      summary: Score listings for the chosen strategy
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EvaluateInput"
+      responses:
+        "200":
+          description: Ranked listings and winner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluateResponse"
+
+  /image/remodel:
+    post:
+      operationId: generateRemodelImage
+      summary: Generate a remodel "after" image from a source image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RemodelInput"
+      responses:
+        "200":
+          description: Before/after URLs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemodelResponse"
+
+  /report/pdf:
+    post:
+      operationId: generateReportPdf
+      summary: Generate analysis PDF link
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportInput"
+      responses:
+        "200":
+          description: PDF URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportResponse"
+
+components:
+  schemas:
+    LeadInput:
+      type: object
+      required: [name, email, whatsapp]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        whatsapp:
+          type: string
+        territory:
+          type: string
+        strategy:
+          type: string
+          enum: [renta, flip, capitalizacion]
+        budget_min:
+          type: number
+        budget_max:
+          type: number
+        notes:
+          type: string
+        consent:
+          type: boolean
+          default: true
+
+    LeadResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        lead_id:
+          type: string
+        stored:
+          type: object
+
+    SearchInput:
+      type: object
+      required: [territory]
+      properties:
+        territory:
+            type: string
+        property_type:
+            type: string
+            enum: [depto, casa, PH, lote, local, oficina]
+        bedrooms:
+            type: integer
+            minimum: 0
+        bathrooms:
+            type: integer
+            minimum: 0
+        min_m2:
+            type: integer
+        max_m2:
+            type: integer
+        price_min:
+            type: number
+        price_max:
+            type: number
+        condition:
+            type: string
+            enum: [a_reciclar, usado, reciclado, a_estrenar]
+        must_haves:
+            type: array
+            items: { type: string }
+        nice_to_haves:
+            type: array
+            items: { type: string }
+        strategy:
+            type: string
+            enum: [renta, flip, capitalizacion]
+        urgency_days:
+            type: integer
+
+    SearchAccepted:
+      type: object
+      properties:
+        job_id:
+          type: string
+        eta_hint:
+          type: string
+
+    Listing:
+      type: object
+      required: [id, url, title, price, currency]
+      properties:
+        id: { type: string }
+        source: { type: string }
+        url: { type: string }
+        title: { type: string }
+        description: { type: string }
+        price: { type: number }
+        currency: { type: string }
+        price_m2: { type: number }
+        address: { type: string }
+        neighborhood: { type: string }
+        city: { type: string }
+        property_type: { type: string }
+        bedrooms: { type: integer }
+        bathrooms: { type: integer }
+        m2_total: { type: number }
+        m2_cubiertos: { type: number }
+        dom: { type: integer }
+        condition: { type: string }
+        amenities:
+          type: array
+          items: { type: string }
+        images:
+          type: array
+          items:
+            type: string
+            format: uri
+        flags:
+          type: array
+          items: { type: string }
+
+    ListingsResponse:
+      type: object
+      properties:
+        listings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Listing"
+
+    EvaluateInput:
+      type: object
+      required: [listings, strategy]
+      properties:
+        listings:
+          type: array
+          items:
+            $ref: "#/components/schemas/Listing"
+        strategy:
+          type: string
+          enum: [renta, flip, capitalizacion]
+
+    EvaluateItem:
+      type: object
+      properties:
+        listing:
+          $ref: "#/components/schemas/Listing"
+        score_total:
+          type: number
+        metrics:
+          type: object
+        rationale:
+          type: string
+
+    EvaluateResponse:
+      type: object
+      properties:
+        ranked:
+          type: array
+          items:
+            $ref: "#/components/schemas/EvaluateItem"
+        winner_id:
+          type: string
+
+    RemodelInput:
+      type: object
+      required: [image_url, style]
+      properties:
+        image_url:
+          type: string
+          format: uri
+        style:
+          type: string
+        notes:
+          type: string
+
+    RemodelResponse:
+      type: object
+      properties:
+        before_url:
+          type: string
+          format: uri
+        after_url:
+          type: string
+          format: uri
+        style_used:
+          type: string
+
+    ReportInput:
+      type: object
+      properties:
+        winner_id:
+          type: string
+
+    ReportResponse:
+      type: object
+      properties:
+        pdf_url:
+          type: string
+          format: uri
